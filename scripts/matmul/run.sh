@@ -5,8 +5,10 @@ export OMP_NUM_THREADS=1
 export ONEDNN_VERBOSE=1      # prints which kernel/ISA path is used
 # optional pinning
 
-ONEDNN_MAX_CPU_ISA=AVX512_CORE_AMX \
+# 'any' lets the library decide which physical layout will be used for a certain memory descriptor of the given problem -- hopefully useful for AMX
+
+ONEDNN_MAX_CPU_ISA=AVX512_CORE_BF16 \
   taskset -c 1 numactl --localalloc \
     ./${BENCHDNN} --mode=p --matmul \
-      --dt=bf16:bf16:f32 --stag=ab --wtag=ab --dtag=ab --bia-dt=undef \
-      m1024n1024k1024
+      --dt=bf16:bf16:f32 --stag=any --wtag=any --dtag=any --bia-dt=undef \
+      10x30:30x20
