@@ -25,10 +25,10 @@ model = Llama4ForConditionalGeneration.from_pretrained(
     cache_dir=HF_SHM_CACHE,
     attn_implementation="flex_attention",
     device_map="auto",
-    torch_dtype=torch.bfloat16,
+    torch_dtype=torch.float,
 )
 
-model = optimize_model(model)
+model = optimize_model(model, low_bit='sym_int8')
 
 url1 = "https://huggingface.co/datasets/huggingface/documentation-images/resolve/0052a70beed5bf71b92610a43a52df6d286cd5f3/diffusers/rabbit.jpg"
 url2 = "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/datasets/cat_style_layout.png"
