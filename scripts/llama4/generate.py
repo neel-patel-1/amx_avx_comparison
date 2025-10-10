@@ -1,6 +1,8 @@
 from transformers import AutoProcessor, Llama4ForConditionalGeneration
 import torch
 import os
+import time
+import datetime
 
 # Prefer /dev/shm for large temporary model files and tensors (tmpfs)
 HF_SHM_CACHE = "/dev/shm/hf_cache"
@@ -46,10 +48,21 @@ inputs = processor.apply_chat_template(
     return_tensors="pt",
 ).to(model.device)
 
+# measure inference time
+start_ts = datetime.datetime.now().isoformat(sep=' ', timespec='seconds')
+start_perf = time.perf_counter()
+print(f"Inference started at: {start_ts}")
+
 outputs = model.generate(
     **inputs,
     max_new_tokens=256,
 )
+
+end_perf = time.perf_counter()
+end_ts = datetime.datetime.now().isoformat(sep=' ', timespec='seconds')
+elapsed = end_perf - start_perf
+print(f"Inference finished at: {end_ts}")
+print(f"Elapsed time: {elapsed:.3f} seconds")
 
 response = processor.batch_decode(outputs[:, inputs["input_ids"].shape[-1]:])[0]
 print(response)
