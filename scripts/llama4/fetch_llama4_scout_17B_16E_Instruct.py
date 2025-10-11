@@ -1,11 +1,8 @@
-from transformers import AutoProcessor, Llama4ForConditionalGeneration
-import torch
+from huggingface_hub import snapshot_download
 import os
-import time
-import datetime
 
 # Prefer /dev/shm for large temporary model files and tensors (tmpfs)
-HF_SHM_CACHE = "/dev/shm/hf_cache"
+HF_SHM_CACHE = "~/.cache/huggingface/"
 os.makedirs(HF_SHM_CACHE, exist_ok=True)
 
 # Redirect HF/Transformers/torch caches to tmpfs
@@ -18,52 +15,14 @@ os.environ.setdefault("TORCH_HOME", os.path.join(HF_SHM_CACHE, "torch"))
 
 model_id = "meta-llama/Llama-4-Scout-17B-16E-Instruct"
 
-processor = AutoProcessor.from_pretrained(model_id, cache_dir=HF_SHM_CACHE)
-model = Llama4ForConditionalGeneration.from_pretrained(
-    model_id,
+token = os.environ.get("HUGGINGFACE_HUB_TOKEN")
+
+# download snapshot into the tmpfs cache dir
+path = snapshot_download(
+    repo_id=model_id,
     cache_dir=HF_SHM_CACHE,
-    attn_implementation="flex_attention",
-    device_map="auto",
-    torch_dtype=torch.bfloat16,
+    token=token,          # None -> will use logged in CLI token
+    repo_type="model",
 )
 
-url1 = "https://huggingface.co/datasets/huggingface/documentation-images/resolve/0052a70beed5bf71b92610a43a52df6d286cd5f3/diffusers/rabbit.jpg"
-url2 = "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/datasets/cat_style_layout.png"
-messages = [
-    {
-        "role": "user",
-        "content": [
-            {"type": "image", "url": url1},
-            {"type": "image", "url": url2},
-            {"type": "text", "text": "Can you describe how these two images are similar, and how they differ?"},
-        ]
-    },
-]
-
-inputs = processor.apply_chat_template(
-    messages,
-    add_generation_prompt=True,
-    tokenize=True,
-    return_dict=True,
-    return_tensors="pt",
-).to(model.device)
-
-# measure inference time
-start_ts = datetime.datetime.now().isoformat(sep=' ', timespec='seconds')
-start_perf = time.perf_counter()
-print(f"Inference started at: {start_ts}")
-
-outputs = model.generate(
-    **inputs,
-    max_new_tokens=256,
-)
-
-end_perf = time.perf_counter()
-end_ts = datetime.datetime.now().isoformat(sep=' ', timespec='seconds')
-elapsed = end_perf - start_perf
-print(f"Inference finished at: {end_ts}")
-print(f"Elapsed time: {elapsed:.3f} seconds")
-
-response = processor.batch_decode(outputs[:, inputs["input_ids"].shape[-1]:])[0]
-print(response)
-print(outputs[0])
+print("Model downloaded to:", path)
