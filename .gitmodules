@@ -1,3 +1,6 @@
 [submodule "third-party/llama.cpp"]
 	path = third-party/llama.cpp
 	url = https://github.com/ggml-org/llama.cpp.git
+[submodule "third-party/pcm"]
+	path = third-party/pcm
+	url = https://github.com/intel/pcm.git
